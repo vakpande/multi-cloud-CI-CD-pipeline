@@ -1,4 +1,4 @@
-Project Outline: Multi-Cloud CI/CD Pipeline
+##Project Outline: Multi-Cloud CI/CD Pipeline
 
 Overview
 This project provides an automated CI/CD pipeline that can deploy applications across multiple cloud providers (AWS, Azure, GCP). It ensures seamless deployment, scaling, and rollback with Terraform, Kubernetes, and Helm.
