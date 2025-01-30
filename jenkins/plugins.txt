@@ -1,0 +1,6 @@
+kubernetes
+pipeline
+github
+docker-plugin
+blueocean
+credentials-binding

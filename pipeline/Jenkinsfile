@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "multi-cloud-app"
+        VERSION = "latest"
+        AWS_ACCOUNT_ID = credentials('AWS_ACCOUNT_ID')
+        AWS_REGION = "us-east-1"
+        GCP_PROJECT_ID = credentials('GCP_PROJECT_ID')
+        AZURE_REGISTRY = "myazurecr.azurecr.io"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/your-org/your-repo.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t $IMAGE_NAME:$VERSION ."
+            }
+        }
+
+        stage('Push to AWS ECR') {
+            steps {
+                sh """
+                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                    docker tag $IMAGE_NAME:$VERSION $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_NAME:$VERSION
+                    docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_NAME:$VERSION
+                """
+            }
+        }
+
+        stage('Push to GCP Artifact Registry') {
+            steps {
+                sh """
+                    gcloud auth configure-docker us-docker.pkg.dev
+                    docker tag $IMAGE_NAME:$VERSION us-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/$IMAGE_NAME:$VERSION
+                    docker push us-docker.pkg.dev/$GCP_PROJECT_ID/my-repo/$IMAGE_NAME:$VERSION
+                """
+            }
+        }
+
+        stage('Push to Azure ACR') {
+            steps {
+                sh """
+                    az acr login --name myazurecr
+                    docker tag $IMAGE_NAME:$VERSION $AZURE_REGISTRY/$IMAGE_NAME:$VERSION
+                    docker push $AZURE_REGISTRY/$IMAGE_NAME:$VERSION
+                """
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh "kubectl apply -f k8s/deployment.yaml"
+            }
+        }
+    }
+}
